@@ -37,7 +37,7 @@ typedef struct tcp_header
 
 typedef struct udp_header
 {
-	uint16_t source;			 /* source port,等价于unsigned int */
+	uint16_t source;			 /* source port,等价于unsigned short */
 	uint16_t dest;				 /* destination port */
 	uint16_t len;					 /* udp length */
 	uint16_t checkl;			 /* udp checksum */
