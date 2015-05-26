@@ -1,4 +1,3 @@
-int auth802x(char *DeviceName);
 #include <stdio.h>
 #include<stdint.h>
 #include <stdlib.h>
