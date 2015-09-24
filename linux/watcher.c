@@ -248,7 +248,7 @@ void SendResponseIdentity(pcap_t *adhandle, const u_char *pkt_data, uint8_t loca
 	x802_header *uh = (x802_header *)(packet+14);//14=sizeof(eher_header)
 	eap_header *eh = (eap_header *)(packet+sizeof(ether_header)+sizeof(x802_header));
 
-	const char *IDENTITY = "host/billgates-PC";
+	const char *IDENTITY = "host/billgates-PC";//your choice
 	u_short lens;
 	//printf("ether:%d,x802:%d,eap:%d数据位置:%d", sizeof(ether_header),sizeof(x802_header),sizeof(eap_header)
 	//	,sizeof(ether_header)+sizeof(x802_header)+sizeof(eap_header)-1);
@@ -284,7 +284,7 @@ void SendResponseIdentity(pcap_t *adhandle, const u_char *pkt_data, uint8_t loca
 	memcpy(identity, IDENTITY, strlen(IDENTITY));
 
 	//lens为eap包头+其后数据大小
-	lens = sizeof(eap_header)-1+strlen(IDENTITY);
+	lens = sizeof(eap_header)-1+strlen(IDENTITY)+1;//add 0x00
 	//printf("\neap+数据总长度:%d\n",lens);
 	uh->len = htons(lens);
 	eh->len = uh->len;
@@ -302,7 +302,21 @@ void SendResponseMD5(pcap_t *adhandle, const  u_char *pkt_data){
 	eap_header *eh = (eap_header *)(packet + sizeof(ether_header)+sizeof(x802_header));
 
 	u_short lens;
-	u_short datapos;
+	u_short datapos = sizeof(ether_header)+sizeof(x802_header)+sizeof(eap_header);
+
+	//eap-md5 value
+	packet[datapos - 1] = 0x10;
+	char *value = (char *)(packet + datapos);
+	char *extra_data = (char *)(packet + datapos + 16);
+	//value field
+	u_char VALUE[16] = {0};
+	const char *user = "";//up to you
+	memcpy(VALUE,user,strlen(user));
+	memcpy(value,VALUE,16);
+	//extra-data field
+	const char *EXTRA_DATA = "";//up to you
+	memcpy(extra_data,EXTRA_DATA,strlen(EXTRA_DATA));
+	
 
 	//初始化etherheader
 	int i = 0;
@@ -321,15 +335,12 @@ void SendResponseMD5(pcap_t *adhandle, const  u_char *pkt_data){
 	eh->code = 0x02;//respond
 	eh->id = pkt_data[19];
 	eh->len = 0x0;
-	eh->type = 0x03;//Legacy Nak
+	eh->type = 0x04;//Legacy Nak
 
-	//附加信息
-	datapos = sizeof(ether_header)+sizeof(x802_header)+sizeof(eap_header);
-	//printf("\n数据的起始位置:%d\n",datapos);
-	packet[datapos-1] = 0x20;//这个值可以随便设,0x19--peap
+
 
 	//lens为eap包头+其后数据大小
-	lens = sizeof(eap_header)-1 + 1;
+	lens = sizeof(eap_header)-1 + 1 + 16 + strlen(EXTRA_DATA)+1;//add 0x00
 	//printf("\neap+数据总长度:%d\n", lens);
 	uh->len = htons(lens);
 	eh->len = uh->len;
