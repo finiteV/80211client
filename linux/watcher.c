@@ -1,23 +1,23 @@
 #include <stdio.h>
-#include<stdint.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include<sys/socket.h>
+#include <sys/socket.h>
 
-#include<pcap.h>
+#include <pcap.h>
 
-#include<memory.h>
+#include <memory.h>
 
 #include <sys/types.h>
 #include "data.h"
-#include<time.h>
-#include<assert.h>
-#include<stdbool.h>
-#include<unistd.h>
-#include<sys/wait.h>
-#include<sys/ioctl.h>
-#include<sys/socket.h>
-#include<net/if.h>
-#include<arpa/inet.h>
+#include <time.h>
+#include <assert.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 
 //#include "debug.h"
 
@@ -27,6 +27,8 @@ const uint8_t MultcastAddr[6] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x03 }; // 多�
 typedef enum { REQUEST = 1, RESPONSE = 2, SUCCESS = 3, FAILURE = 4, H3CDATA = 10 } EAP_Code;
 typedef enum { IDENTITY = 1, NOTIFICATION = 2, MD5 = 4, AVAILABLE = 20 } EAP_Type;
 static int times = 20;//重复请求的次数
+const char *USER = "";
+const char *IDENTITY_STR = "USER#0IP#4.1.7#EXT";
 
 void SendStartPkt(pcap_t *handle, uint8_t localmac[6]);
 void GetMacFromDevice(uint8_t mac[6], const char *devicename);
@@ -248,7 +250,6 @@ void SendResponseIdentity(pcap_t *adhandle, const u_char *pkt_data, uint8_t loca
 	x802_header *uh = (x802_header *)(packet+14);//14=sizeof(eher_header)
 	eap_header *eh = (eap_header *)(packet+sizeof(ether_header)+sizeof(x802_header));
 
-	const char *IDENTITY = "host/billgates-PC";//your choice
 	u_short lens;
 	//printf("ether:%d,x802:%d,eap:%d数据位置:%d", sizeof(ether_header),sizeof(x802_header),sizeof(eap_header)
 	//	,sizeof(ether_header)+sizeof(x802_header)+sizeof(eap_header)-1);
@@ -281,10 +282,10 @@ void SendResponseIdentity(pcap_t *adhandle, const u_char *pkt_data, uint8_t loca
 	//初始identity信息
 	//*identity = "aaa";
 	//printf("\nLen('%s')=%d\n",IDENTITY, strlen(IDENTITY));
-	memcpy(identity, IDENTITY, strlen(IDENTITY));
+	memcpy(identity, IDENTITY_STR, strlen(IDENTITY_STR));
 
 	//lens为eap包头+其后数据大小
-	lens = sizeof(eap_header)-1+strlen(IDENTITY)+1;//add 0x00
+	lens = sizeof(eap_header)-1+strlen(IDENTITY_STR)+1;//add 0x00
 	//printf("\neap+数据总长度:%d\n",lens);
 	uh->len = htons(lens);
 	eh->len = uh->len;
@@ -310,12 +311,11 @@ void SendResponseMD5(pcap_t *adhandle, const  u_char *pkt_data){
 	char *extra_data = (char *)(packet + datapos + 16);
 	//value field
 	u_char VALUE[16] = {0};
-	const char *user = "";//up to you
-	memcpy(VALUE,user,strlen(user));
+	
+	memcpy(VALUE,USER,strlen(USER));
 	memcpy(value,VALUE,16);
-	//extra-data field
-	const char *EXTRA_DATA = "";//up to you
-	memcpy(extra_data,EXTRA_DATA,strlen(EXTRA_DATA));
+	//extra-data field equals IDENTITY
+	memcpy(extra_data,IDENTITY_STR,strlen(IDENTITY_STR));
 	
 
 	//初始化etherheader
@@ -340,7 +340,7 @@ void SendResponseMD5(pcap_t *adhandle, const  u_char *pkt_data){
 
 
 	//lens为eap包头+其后数据大小
-	lens = sizeof(eap_header)-1 + 1 + 16 + strlen(EXTRA_DATA)+1;//add 0x00
+	lens = sizeof(eap_header)-1 + 1 + 16 + strlen(IDENTITY_STR)+1;//add 0x00
 	//printf("\neap+数据总长度:%d\n", lens);
 	uh->len = htons(lens);
 	eh->len = uh->len;

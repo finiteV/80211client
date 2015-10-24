@@ -13,9 +13,10 @@ int main(int argc,char *argv[]){
 
 	
 	/*check root privilige*/
+	//printf("%d,%d\n",getuid(),geteuid());
 	if(geteuid()==0){
 		setuid(0);
-	}	
+	}
 	if(getuid()!=0){
 		fprintf(stderr,"Sorry,it is unroot.\n");
 		exit(-1);
